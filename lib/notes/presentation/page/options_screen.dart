@@ -1,4 +1,6 @@
+import 'package:bawq/notes/presentation/provider/notes_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class OptionsScreen extends StatefulWidget {
   const OptionsScreen({Key? key}) : super(key: key);
@@ -53,6 +55,7 @@ class _OptionsScreenState extends State<OptionsScreen> {
                 activeColor: Colors.indigo,
                 value: _value,
                 onChanged: (bool value) {
+                  Provider.of<NotesProvider>(context,listen: false).changeDataState(context);
                   _onChanged(value);
                 },
               ),

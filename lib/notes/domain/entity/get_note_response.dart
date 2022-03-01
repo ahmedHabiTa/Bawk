@@ -12,6 +12,8 @@ String getNotesResponseToJson(List<GetNotesResponse> data) =>
     json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 
 class GetNotesResponse {
+
+
   GetNotesResponse({
     required this.text,
     this.placeDateTime,
@@ -20,10 +22,21 @@ class GetNotesResponse {
   });
 
   final String text;
-  DateTime? placeDateTime;
-  String? userId;
-  String? id;
+  final DateTime? placeDateTime;
+  final String? userId;
+  final String? id;
 
+  GetNotesResponse copy({
+    String? text,
+    DateTime? placeDateTime,
+    String? userId,
+    String? id,
+}) => GetNotesResponse(
+    id: id ?? this.id,
+    text: text ?? this.text,
+    userId: userId ?? this.userId,
+    placeDateTime: placeDateTime ?? this.placeDateTime,
+  );
   factory GetNotesResponse.fromJson(Map<String, dynamic> json) =>
       GetNotesResponse(
         text: json["text"],

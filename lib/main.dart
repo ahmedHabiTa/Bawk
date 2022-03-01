@@ -8,7 +8,6 @@ import 'notes/presentation/page/home_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await DBHelper.initDB();
   await di.init();
   runApp(const MyApp());
 }

@@ -8,13 +8,28 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-class AddUserScreen extends StatelessWidget {
+class AddUserScreen extends StatefulWidget {
   AddUserScreen({Key? key}) : super(key: key);
-  GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
-  final emailController = TextEditingController();
 
+  @override
+  State<AddUserScreen> createState() => _AddUserScreenState();
+}
+
+class _AddUserScreenState extends State<AddUserScreen> {
+
+  GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+  final usernameController = TextEditingController();
+
+  final passwordController = TextEditingController();
+
+  final emailController = TextEditingController();
+  String? interestId ;
+  @override
+  void initState() {
+    super.initState();
+    Provider.of<NotesProvider>(context,listen: false).getAllInterests();
+  }
   @override
   Widget build(BuildContext context) {
     final noteProv = Provider.of<NotesProvider>(context);
@@ -84,22 +99,51 @@ class AddUserScreen extends StatelessWidget {
                 const SizedBox(
                   height: 15,
                 ),
-                Container(
-                  height: 60,
+                SizedBox(
                   width: MediaQuery.of(context).size.width * 0.9,
-                  decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8.0),
-                      color: Colors.grey.withOpacity(0.02),
-                      border: Border.all(width: 1)),
-                  child: ExpansionTile(
-                    onExpansionChanged: (value) {},
-                    backgroundColor: Colors.white,
-                    tilePadding:const EdgeInsets.symmetric(
-                      horizontal: 10.0,
-                    ),
-                    title:const Text('Football'),
-                    children:const [],
-                  ),
+                  child: DropdownButtonFormField(
+                      onTap: () => FocusScope.of(context).unfocus(),
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Field cannot be empty';
+                        }
+                        return null;
+                      },
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        fillColor: Colors.grey[50],
+                        filled: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            width: 1,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        hintText: 'Interest',
+                      ),
+                      items: noteProv.interests
+                          .map(
+                            (e) => DropdownMenuItem(
+                          child: Row(
+                            children: [
+                              Text(
+                                e.intrestText,
+                                style: TextStyle(fontSize: 15),
+                              ),
+                            ],
+                          ),
+                          value: e.id.toString(),
+                        ),
+                      )
+                          .toList(),
+                      onSaved: (value) {},
+                      onChanged: (value) {
+                        setState(() {
+                          interestId = value.toString();
+                        });
+                        print(interestId.toString());
+                      }),
                 ),
                 const SizedBox(
                   height: 15,
@@ -125,6 +169,7 @@ class AddUserScreen extends StatelessWidget {
                               username: usernameController.text,
                               password: passwordController.text,
                               email: emailController.text,
+                              interestId: interestId!,
                             );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

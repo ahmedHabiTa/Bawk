@@ -3,12 +3,12 @@ import 'dart:io';
 
 import 'package:bawq/core/error/exceptions.dart';
 import 'package:bawq/core/util/api_basehelper.dart';
+import 'package:bawq/core/util/sqflite_helper.dart';
+import 'package:bawq/notes/domain/entity/get_all_interest.dart';
 import 'package:bawq/notes/domain/entity/get_all_user.dart';
 import 'package:bawq/notes/domain/entity/get_note_response.dart';
 import 'package:bawq/notes/domain/usecase/get_notes.dart';
 import 'package:bawq/notes/presentation/page/home_page.dart';
-import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
@@ -17,6 +17,9 @@ class NotesProvider extends ChangeNotifier {
   String getAllNotesUrl = "http://192.236.155.173:55886/notes/getall";
 
   String getAllUsersUrl = "http://192.236.155.173:55886/users/getall";
+
+  String getAllInterestsUrl = "http://192.236.155.173:55886/intrests/getall";
+
   String addUserUrl = "http://192.236.155.173:55886/notes/insert";
 
   // Use Cases
@@ -31,19 +34,29 @@ class NotesProvider extends ChangeNotifier {
 
   List<GetNotesResponse> get notes => _notes;
 
+  bool isLocal = false;
+  List<Note> localNotes = [];
+
   Future<void> getAllNotes() async {
-    try {
-      final response = await http
-          .get(Uri.parse(getAllNotesUrl),);
-      if (response.statusCode == 200) {
-        _notes = List<GetNotesResponse>.from(json
-            .decode(response.body)
-            .map((x) => GetNotesResponse.fromJson(x)));
-      } else {
-        throw ServerException();
+    if(isLocal == true){
+      loading = true;
+      localNotes = await NotesDatabase.instance.readAllNotes();
+      loading = false;
+    }else{
+      try {
+        final response = await http.get(
+          Uri.parse(getAllNotesUrl),
+        );
+        if (response.statusCode == 200) {
+          _notes = List<GetNotesResponse>.from(json
+              .decode(response.body)
+              .map((x) => GetNotesResponse.fromJson(x)));
+        } else {
+          throw ServerException();
+        }
+      } catch (e) {
+        rethrow;
       }
-    } catch (e) {
-      rethrow;
     }
     notifyListeners();
   }
@@ -67,6 +80,25 @@ class NotesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<InterestModel> _interests = [];
+
+  List<InterestModel> get interests => _interests;
+
+  Future<void> getAllInterests() async {
+    try {
+      final response = await http.get(Uri.parse(getAllInterestsUrl));
+      if (response.statusCode == 200) {
+        _interests = List<InterestModel>.from(
+            json.decode(response.body).map((x) => InterestModel.fromJson(x)));
+      } else {
+        throw ServerException();
+      }
+    } catch (e) {
+      rethrow;
+    }
+    notifyListeners();
+  }
+
   File? imageUrl;
 
   bool get isPicked => imageUrl != null;
@@ -78,6 +110,7 @@ class NotesProvider extends ChangeNotifier {
     required String username,
     required String password,
     required String email,
+    required String interestId,
     required BuildContext context,
   }) async {
     loading = true;
@@ -89,7 +122,7 @@ class NotesProvider extends ChangeNotifier {
         "Password": username,
         "Email": username,
         "ImageAsBase64": imageAsBase64,
-        "IntrestId": "1"
+        "IntrestId": interestId,
       };
       final response = await http.post(
           Uri.parse("http://192.236.155.173:55886/users/insert"),
@@ -117,32 +150,89 @@ class NotesProvider extends ChangeNotifier {
   }
 
   Future<void> addNote({
-  required String noteContent,
+    required String noteContent,
+    required String userId,
     required BuildContext context,
-}) async {
+  }) async {
     loading = true;
-    try {
-      final body = {
-        "Text": noteContent,
-        "UserId": "3",
-        "PlaceDateTime": "2021-11-18T09:39:44",
-      };
-      final response = await http.post(
-          Uri.parse("http://192.236.155.173:55886/notes/insert"),
-          body: jsonEncode(body),
-          headers: {
-            "Accept": "application/json",
-            "content-type": "application/json"
-          });
-    } catch (e) {
-      throw UnimplementedError();
+    if(isLocal == true){
+      NotesDatabase.instance.create(
+          Note(text: noteContent, placeDate: DateTime.now().toString(), userId: userId));
+    }else{
+      try {
+        final body = {
+          "Text": noteContent,
+          "UserId": userId,
+          "PlaceDateTime": "2021-11-18T09:39:44",
+        };
+        final response = await http.post(
+            Uri.parse("http://192.236.155.173:55886/notes/insert"),
+            body: jsonEncode(body),
+            headers: {
+              "Accept": "application/json",
+              "content-type": "application/json"
+            });
+      } catch (e) {
+        throw UnimplementedError();
+      }
     }
     loading = false;
-
-
     Navigator.pushReplacement(
         context, MaterialPageRoute(builder: (_) => const HomePage()));
     notifyListeners();
   }
 
+  Future<void> updateNote({
+    required String id,
+    required String text,
+    required String userId,
+    required BuildContext context,
+  }) async {
+    loading = true;
+    if(isLocal == true){
+      NotesDatabase.instance.update(Note(text: text, placeDate: DateTime.now().toString(), userId: userId));
+    }else{
+      try {
+        final body = {
+          'id': id,
+          'Text': text,
+          'UserId': userId,
+          'PlaceDateTime': "2021-11-18T09:39:44",
+        };
+        final response = await http.post(
+            Uri.parse("http://192.236.155.173:55886/notes/update"),
+            body: jsonEncode(body),
+            headers: {
+              "Accept": "application/json",
+              "content-type": "application/json"
+            });
+      } catch (e) {
+        throw UnimplementedError();
+      }
+    }
+    loading = false;
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (_) => const HomePage()));
+
+    notifyListeners();
+  }
+
+
+
+
+
+  List<dynamic> checkList(){
+    if(isLocal == true){
+      return localNotes;
+    }
+     return notes ;
+  }
+
+  bool changeDataState(context){
+    isLocal = !isLocal ;
+    Navigator.pushReplacement(
+        context, MaterialPageRoute(builder: (_) => const HomePage()));
+    notifyListeners();
+    return isLocal;
+  }
 }

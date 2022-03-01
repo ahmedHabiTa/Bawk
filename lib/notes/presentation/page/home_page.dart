@@ -1,3 +1,4 @@
+import 'package:bawq/core/util/sqflite_helper.dart';
 import 'package:bawq/notes/presentation/page/edit_note_page.dart';
 import 'package:bawq/notes/presentation/page/options_screen.dart';
 import 'package:bawq/notes/presentation/provider/notes_provider.dart';
@@ -20,8 +21,15 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-       Provider.of<NotesProvider>(context, listen: false).getAllNotes();
-       Provider.of<NotesProvider>(context, listen: false).getAllUsers();
+    Provider.of<NotesProvider>(context, listen: false).getAllNotes();
+    Provider.of<NotesProvider>(context, listen: false).getAllUsers();
+  }
+
+  @override
+  void dispose() {
+    NotesDatabase.instance.close();
+
+    super.dispose();
   }
 
   @override
@@ -33,15 +41,18 @@ class _HomePageState extends State<HomePage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>const EditNoteScreen(),
+              builder: (_) =>  EditNoteScreen(
+                noteData: {},
+              ),
             ),
           );
+
         },
         child: const Icon(Icons.add),
       ),
       appBar: AppBar(
         backgroundColor: Colors.indigo,
-        title:const Text('Notes'),
+        title: const Text('Notes'),
         actions: [
           GestureDetector(
             onTap: () {
@@ -52,7 +63,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               );
             },
-            child:const Icon(Icons.person_add),
+            child: const Icon(Icons.person_add),
           ),
           const SizedBox(
             width: 12,
@@ -62,11 +73,11 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>const OptionsScreen(),
+                  builder: (_) => const OptionsScreen(),
                 ),
               );
             },
-            child:const Icon(Icons.settings),
+            child: const Icon(Icons.settings),
           ),
           const SizedBox(
             width: 12,
@@ -80,110 +91,131 @@ class _HomePageState extends State<HomePage> {
       body: Consumer<NotesProvider>(
         builder: (context, prov, _) {
           return SingleChildScrollView(
-            physics:const AlwaysScrollableScrollPhysics(),
-            child:
-                prov.notes.isEmpty
-                    ? Column(
-                      children: const[
-                         SizedBox(height: 50,),
-                        Center(
-                            child: CircularProgressIndicator(
-                            color: Colors.indigo,
-                          )),
-                      ],
-                    )
-                    :
-                Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SizedBox(
-                    height: 50,
-                    child: Row(
-                      children: [
-                        const  Icon(
-                          Icons.filter_list,
-                          color: Colors.indigo,
-                          size: 25,
-                        ),
-                        const SizedBox(
-                          width: 12,
-                        ),
-                        GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                searched = !searched;
-                              });
-                            },
-                            child:const Icon(
-                              Icons.search,
-                              color: Colors.indigo,
-                              size: 25,
-                            )),
-                        const SizedBox(
-                          width: 6,
-                        ),
-                        if (searched == true)
-                          Stack(
-                            alignment: Alignment.centerRight,
-                            children: [
-                              const Positioned(
-                                right: 10,
-                                child: Icon(Icons.clear),
-                              ),
-                              CustomFormField(
-                                contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 0, horizontal: 10),
-                                width: MediaQuery.of(context).size.width * 0.75,
-                                hintText: 'forget',
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                ListView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: prov.notes.length,
-                  itemBuilder: (context, index) {
-                    return Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(10.0),
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: prov.checkList().isEmpty
+                ? Column(
+                    children: const [
+                      SizedBox(
+                        height: 50,
+                      ),
+                      Center(
+                          child: CircularProgressIndicator(
+                        color: Colors.indigo,
+                      )),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: SizedBox(
+                          height: 50,
                           child: Row(
                             children: [
-                              SizedBox(
-                                width: 250,
-                                child: Text(
-                                  prov.notes[index].text,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                ),
-                              ),
-                              const Spacer(),
-                              GestureDetector(
-                                onTap: () {},
-                                child:const Icon(Icons.edit),
+                              const Icon(
+                                Icons.filter_list,
+                                color: Colors.indigo,
+                                size: 25,
                               ),
                               const SizedBox(
-                                width: 10,
-                              )
+                                width: 12,
+                              ),
+                              GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      searched = !searched;
+                                    });
+                                  },
+                                  child: const Icon(
+                                    Icons.search,
+                                    color: Colors.indigo,
+                                    size: 25,
+                                  )),
+                              const SizedBox(
+                                width: 6,
+                              ),
+                              if (searched == true)
+                                Stack(
+                                  alignment: Alignment.centerRight,
+                                  children: [
+                                    const Positioned(
+                                      right: 10,
+                                      child: Icon(Icons.clear),
+                                    ),
+                                    CustomFormField(
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              vertical: 0, horizontal: 10),
+                                      width: MediaQuery.of(context).size.width *
+                                          0.75,
+                                      hintText: 'forget',
+                                    ),
+                                  ],
+                                ),
                             ],
-                            crossAxisAlignment: CrossAxisAlignment.start,
                           ),
                         ),
-                        const Divider(
-                          thickness: 2,
-                          color: Colors.grey,
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
+                      ),
+                      ListView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        itemCount: prov.checkList().length,
+                        itemBuilder: (context, index) {
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(10.0),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 250,
+                                      child: Text(
+                                        prov.checkList()[index].text,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 2,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    GestureDetector(
+                                      onTap: () {
+                                        if(prov.isLocal == true){
+                                          (){};
+                                        }else{
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) => EditNoteScreen(
+                                                noteData: {
+                                                  'id': prov.notes[index].id,
+                                                  'Text': prov.notes[index].text,
+                                                  'UserId':
+                                                  prov.notes[index].userId,
+                                                  'PlaceDateTime': prov
+                                                      .notes[index].placeDateTime,
+                                                },
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: const Icon(Icons.edit),
+                                    ),
+                                    const SizedBox(
+                                      width: 10,
+                                    )
+                                  ],
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                ),
+                              ),
+                              const Divider(
+                                thickness: 2,
+                                color: Colors.grey,
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
           );
         },
       ),

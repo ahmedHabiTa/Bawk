@@ -12,13 +12,11 @@ Future<void> initNotesInjection(GetIt sl) async {
     () => NotesProvider(
       getNotes: sl(),
       helper: sl(),
-
     ),
   );
 
   //* Use cases
   sl.registerLazySingleton(() => GetNotes(repository: sl()));
-
 
   //* Repository
   sl.registerLazySingleton<NotesRepository>(
@@ -33,4 +31,3 @@ Future<void> initNotesInjection(GetIt sl) async {
   );
   //
 }
-
